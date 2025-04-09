@@ -1,6 +1,7 @@
 package com.danbear.demo.user;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.data.annotation.CreatedDate;
@@ -22,6 +23,7 @@ public class User {
   @Column(unique = true)
   private String username;
 
+  @Email
   @Column(unique = true)
   private String email;
 

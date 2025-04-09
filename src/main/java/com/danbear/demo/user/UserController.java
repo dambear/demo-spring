@@ -1,11 +1,13 @@
 package com.danbear.demo.user;
 
+import com.danbear.demo.common.dto.ApiResponse;
 import com.danbear.demo.user.dto.UserDto;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,7 +16,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 @RestController
-@RequestMapping("/users")
+@RequestMapping("/api/users")
 public class UserController {
   private final UserService userService;
 
@@ -23,13 +25,29 @@ public class UserController {
   }
 
   @PostMapping
-  public CompletableFuture<ResponseEntity<UserDto>> createUser(
-      @Valid @RequestBody UserDto userDto) {
+  public CompletableFuture<ResponseEntity<ApiResponse<UserDto>>> createUser(
+          @Valid @RequestBody UserDto userDto) {
     return userService.createUserAsync(userDto)
-        .thenApply(user -> ResponseEntity
-            .created(URI.create("/api/users/" + user.id()))
-            .body(user)
-        );
+            .thenApply(user -> ResponseEntity
+                    .status(HttpStatus.CREATED)
+                    .body(ApiResponse.success(
+                            user,
+                            "/users",
+                            HttpStatus.CREATED
+                    ))
+            );
+  }
+
+  @GetMapping("/{id}")
+  public CompletableFuture<ResponseEntity<ApiResponse<UserDto>>> getUser(@PathVariable Long id) {
+    return userService.getUserAsync(id)
+            .thenApply(user -> ResponseEntity.ok(
+                    ApiResponse.success(
+                            user,
+                            "/users/" + id,
+                            HttpStatus.OK
+                    )
+            ));
   }
 
   @GetMapping

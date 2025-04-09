@@ -1,5 +1,6 @@
 package com.danbear.demo.user;
 
+import com.danbear.demo.common.exception.BusinessException;
 import com.danbear.demo.user.dto.UserDto;
 import com.danbear.demo.user.dto.UserMapper;
 
@@ -11,6 +12,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 @Service
@@ -26,16 +28,43 @@ public class UserService {
   @Async
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public CompletableFuture<UserDto> createUserAsync(UserDto userDto) {
+
     if (repository.existsByUsername(userDto.username())) {
-      throw new IllegalArgumentException("Username already exists");
+      throw new BusinessException(
+              UserErrorCode.USERNAME_EXISTS.getCode(),
+              UserErrorCode.USERNAME_EXISTS.getMessage(),
+              UserErrorCode.USERNAME_EXISTS.getHttpStatus(),
+              Map.of("username", userDto.username())
+      );
     }
+
     if (repository.existsByEmail(userDto.email())) {
-      throw new IllegalArgumentException("Email already exists");
+      throw new BusinessException(
+              UserErrorCode.EMAIL_EXISTS.getCode(),
+              UserErrorCode.EMAIL_EXISTS.getMessage(),
+              UserErrorCode.EMAIL_EXISTS.getHttpStatus(),
+              Map.of("email", userDto.email())
+      );
     }
 
     User user = mapper.toEntity(userDto);
     User savedUser = repository.save(user);
     return CompletableFuture.completedFuture(mapper.toDto(savedUser));
+  }
+
+  @Async
+  @Transactional(readOnly = true)
+  public CompletableFuture<UserDto> getUserByIdAsync(Long id) {
+    return CompletableFuture.completedFuture(
+            repository.findById(id)
+                    .map(mapper::toDto)
+                    .orElseThrow(() -> new BusinessException(
+                            UserErrorCode.USER_NOT_FOUND.getCode(),
+                            UserErrorCode.USER_NOT_FOUND.getMessage(),
+                            UserErrorCode.USER_NOT_FOUND.getHttpStatus(),
+                            Map.of("userId", id)
+                    ))
+    );
   }
 
   @Async
